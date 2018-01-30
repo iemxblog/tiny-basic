@@ -31,7 +31,7 @@ data Statement =
 
 data Expr = ExprString String | ExprExpr Expression deriving (Eq, Show)
 
-data Expression = Expression (Maybe Sign) Term [(Sign, Term)] deriving (Eq, Show)
+data Expression = Expression Sign Term [(Sign, Term)] deriving (Eq, Show)
 
 data Term = Term Factor [(MultSymbol, Factor)] deriving (Eq, Show)
 

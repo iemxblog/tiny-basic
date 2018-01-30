@@ -114,7 +114,7 @@ varList = var `sepBy` (char ',')
 
 expression :: Parser Expression
 expression = do
-    ms <- try (sign >>= \s -> return $ Just s) <|> return Nothing
+    ms <- try sign <|> return Plus
     t <- term
     ps <- many' expressionPart
     return $ Expression ms t ps
