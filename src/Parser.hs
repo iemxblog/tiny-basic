@@ -8,24 +8,35 @@ import Data.Text
 import Control.Applicative
 import AST
 
+
+token :: Parser a -> Parser a
+token p = do
+    skipSpace
+    r <- p
+    skipSpace
+    return r
+
+symbol :: Text -> Parser Text
+symbol = token . string
+
 program :: Parser Program
 program = many' line
 
 line :: Parser Line
-line = try numberedLine <|> nonNumberedLine
+line = try labeledLine <|> nonLabeledLine
 
-numberedLine :: Parser Line
-numberedLine = do
+labeledLine :: Parser Line
+labeledLine = do
     n <- decimal
     s <- statement
     char '\n'
-    return $ NumberedLine n s
+    return $ Line (Just n) s
 
-nonNumberedLine :: Parser Line
-nonNumberedLine = do
+nonLabeledLine :: Parser Line
+nonLabeledLine = do
     s <- statement 
     char '\n'
-    return $ Line s
+    return $ Line Nothing s
 
 
 statement :: Parser Statement
@@ -169,7 +180,7 @@ multSymbol = try (char '*' >> return Mult) <|> (char '/' >> return Div)
 var :: Parser Var
 var = do
     c <- satisfy (inClass "A-Z")
-    return $ Var c
+    return $ c
 
 relop :: Parser Relop
 relop = 

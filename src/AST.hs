@@ -14,7 +14,10 @@ module AST (
 
 type Program = [Line]
 
-data Line = NumberedLine Int Statement | Line Statement deriving (Eq, Show)
+type Label = Int
+
+data Line = Line (Maybe Label) Statement deriving (Eq, Show)
+
 data Statement =
     Print [Expr] 
     | If Expression Relop Expression Statement
@@ -40,7 +43,7 @@ data Factor = VarFactor Var | NumberFactor Int | ExpressionFactor Expression der
 data Sign = Plus | Minus deriving (Eq, Show)
 data MultSymbol = Mult | Div deriving (Eq, Show)
 
-data Var = Var Char deriving (Eq, Show)
+type Var = Char
 
 data Relop =
     LessThan
