@@ -1,5 +1,6 @@
 module AST (
     Program,
+    Label,
     Line(..),
     Statement(..),
     Expr(..),

@@ -4,53 +4,124 @@ import Data.Text hiding (length)
 import Data.Attoparsec.Text
 import qualified Data.Map as Map
 import Control.Monad.State
+import Control.Monad.Trans.Reader
+import Control.Monad.Error
+import Data.Maybe
 import AST
 import Parser
 
 type LineNumber = Int
 type Variables = Map.Map Char Int
-type Environment = (LineNumber, Variables)
+type Labels = Map.Map Label LineNumber
+type Environment = (Program, Labels)
+type ProgramState = (LineNumber, Variables)
 
-incLine :: State Environment ()
+type Interpreter a = ErrorT String (ReaderT Environment (StateT ProgramState IO)) a
+
+
+getProgram :: Interpreter Program
+getProgram = liftM fst (lift ask)
+
+getLabels :: Interpreter Labels
+getLabels = liftM snd (lift ask)
+
+setCurrentLine :: Int -> Interpreter ()
+setCurrentLine l = do
+    (_, vs) <- lift $ lift get
+    lift $ lift $ put (l, vs)
+    
+incLine :: Interpreter ()
 incLine = do
-    (l, e) <- get
-    put (l+1, e)
+    l <- getCurrentLine
+    setCurrentLine (l+1)
 
-runProgram :: Program -> State Environment (IO ())
-runProgram p = do
-    (l, _) <- get
+getCurrentLine :: Interpreter Int
+getCurrentLine = liftM fst $ lift $ lift get
+
+getVariables :: Interpreter Variables
+getVariables = liftM snd (lift $ lift get)
+
+setVariables :: Variables -> Interpreter ()
+setVariables vs = do
+    (l, _) <- lift $ lift get
+    lift $ lift $ put (l, vs)
+
+getVariable :: Var -> Interpreter Int
+getVariable vn = do
+    vs <- getVariables
+    case Map.lookup vn vs of
+        Nothing -> throwError $ "Unknown variable " ++ [vn]
+        Just vv -> return vv
+
+
+setVariable :: Var -> Int -> Interpreter ()
+setVariable var value = do
+    vs <- getVariables
+    let vs2 = Map.insert var value vs
+    setVariables vs2 
+
+
+calculateLabels' :: LineNumber -> Program -> Labels
+calculateLabels' _ [] = Map.empty
+calculateLabels' ln ((Line (Just la) _):xs) = case la `Map.member` remaining of
+        False -> Map.insert la ln remaining
+        True -> error $ "Duplicate label " ++ show la ++ "on lines " ++ show ln ++ " and " ++ show (fromJust (Map.lookup la remaining))
+    where remaining = calculateLabels' (ln+1) xs
+calculateLabels' ln ((Line Nothing _):xs) = calculateLabels' (ln+1) xs
+
+calculateLabels :: Program -> Map.Map Label LineNumber
+calculateLabels = calculateLabels' 0
+
+runProgram :: Interpreter ()
+runProgram = do
+    l <- getCurrentLine
+    p <- getProgram
     if l < length p then do
-        a <- interpretLine $ p !! l
-        as <- runProgram p 
-        return (a >> as)
+        interpretLine (p !! l)
+        runProgram
     else
-        return (return ())
+        return ()
 
-interpretLine :: Line -> State Environment (IO ())
+interpretLine :: Line -> Interpreter ()
 interpretLine (Line _ s) = interpretStatement s
 
-interpretStatement :: Statement -> State Environment (IO ())
+interpretStatement :: Statement -> Interpreter ()
 interpretStatement (Print xs) = do
-    a <- liftM sequence_ (mapM interpretExpr xs)
+    mapM_ interpretExpr xs
+    lift $ lift $ lift $ putStr "\n"
     incLine
-    return a
 interpretStatement (If e1 ro e2 s) = do
     e1r <- evalExpression e1
     e2r <- evalExpression e2
     case ro of
-        LessThan -> if e1r < e2r then interpretStatement s else return (return ())
+        LessThan -> if e1r < e2r then interpretStatement s else return ()
+        Different -> if e1r /= e2r then interpretStatement s else return ()
+        LessThanOrEqual -> if e1r <= e2r then interpretStatement s else return ()
+        GreaterThan -> if e1r > e2r then interpretStatement s else return ()
+        GreaterThanOrEqual -> if e1r >= e2r then interpretStatement s else return ()
+        Equal -> if e1r == e2r then interpretStatement s else return ()
+    incLine
+interpretStatement (Goto e) = do
+    er <- evalExpression e
+    ls <- getLabels
+    case Map.lookup er ls of
+        Just l -> setCurrentLine l >> runProgram
+        Nothing -> throwError $ "No such label : " ++ show er
+    
     
 
-interpretExpr :: Expr -> State Environment (IO ())
-interpretExpr (ExprString xs) = return $ putStr xs
-interpretExpr (ExprExpr e) = liftM (putStr . show) $ evalExpression e
+interpretExpr :: Expr -> Interpreter ()
+interpretExpr (ExprString xs) = lift $ lift $ lift $  putStr xs
+interpretExpr (ExprExpr e) = do
+    er <- evalExpression e
+    lift $ lift $ lift $ putStr $ show er
 
-evalExpression :: Expression -> State Environment Int
+evalExpression :: Expression -> Interpreter Int
 evalExpression (Expression s t xs) = do
     t1 <- liftM (evalSign s 0) (evalTerm t)
     foldM evalExpressionPart t1 xs    
 
-evalExpressionPart :: Int -> (Sign, Term) -> State Environment Int
+evalExpressionPart :: Int -> (Sign, Term) -> Interpreter Int
 evalExpressionPart tv1 (s, t2) = do
     tv2 <- evalTerm t2
     return $ evalSign s tv1 tv2
@@ -59,12 +130,12 @@ evalSign :: Sign -> Int -> Int -> Int
 evalSign Plus = (+)
 evalSign Minus = (-)
 
-evalTerm :: Term -> State Environment Int
+evalTerm :: Term -> Interpreter Int
 evalTerm (Term fa xs) = do
     far <- evalFactor fa
     foldM evalTermPart far xs
 
-evalTermPart :: Int -> (MultSymbol, Factor) -> State Environment Int
+evalTermPart :: Int -> (MultSymbol, Factor) -> Interpreter Int
 evalTermPart fa1 (ms, fa2) = do
     far2 <- evalFactor fa2
     return $ evalMultSymbol ms fa1 far2
@@ -73,12 +144,8 @@ evalMultSymbol :: MultSymbol -> Int -> Int -> Int
 evalMultSymbol Mult = (*)
 evalMultSymbol Div = div
 
-evalFactor :: Factor -> State Environment Int
-evalFactor (VarFactor v) = do
-    (_, vs) <- get
-    case Map.lookup v vs of
-        Just i -> return i
-        Nothing -> error $ "Unknown variable " ++ [v]
+evalFactor :: Factor -> Interpreter Int
+evalFactor (VarFactor v) = getVariable v
 evalFactor (NumberFactor n) = return n
 evalFactor (ExpressionFactor e) = evalExpression e
 
@@ -87,4 +154,12 @@ main = do
     s <- getContents
     case parseOnly program (pack s) of
         Left err -> putStrLn err
-        Right v -> print v >> evalState (runProgram v) (0, Map.empty)
+        Right v -> do
+            print v 
+            putStrLn "Running program..."
+            r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty)
+            putStrLn "Program run."
+            case r of
+                Left err -> putStrLn err
+                Right () -> putStrLn "Program terminated without error"
+
