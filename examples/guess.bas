@@ -4,5 +4,5 @@ PRINT "Guess"
 IF A = G THEN GOTO 20
 IF A > G THEN PRINT "Lower"
 IF A < G THEN PRINT "Higher"
-GOTO 100
+GOTO 10
 20 PRINT "Won"
