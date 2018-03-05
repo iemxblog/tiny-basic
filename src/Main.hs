@@ -99,6 +99,7 @@ interpretStatement (Goto e) = do
         Just l -> setCurrentLine l >> runProgram
         Nothing -> throwError $ "No such label : " ++ show er
 interpretStatement (Input vs) = mapM_ inputVariable vs >> incLine
+interpretStatement (Let vn e) = evalExpression e >>= setVariable vn >> incLine
     
 inputVariable :: Var -> Interpreter ()
 inputVariable v = do
