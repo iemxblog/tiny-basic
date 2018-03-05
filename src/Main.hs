@@ -7,6 +7,8 @@ import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Error
 import Data.Maybe
+import System.Environment
+import System.IO
 import AST
 import Parser
 
@@ -96,17 +98,16 @@ interpretStatement (Goto e) = do
     case Map.lookup er ls of
         Just l -> setCurrentLine l >> runProgram
         Nothing -> throwError $ "No such label : " ++ show er
-interpretStatement (Input vs) = mapM_ inputVariable vs
+interpretStatement (Input vs) = mapM_ inputVariable vs >> incLine
     
 inputVariable :: Var -> Interpreter ()
 inputVariable v = do
     lift $ lift $ lift $ putStr (v:" = ")
+    lift $ lift $ lift $ hFlush stdout
     line <- lift $ lift $ lift getLine
     case parseOnly decimal (pack line) of
-        Left err -> throwError err
+        Left err -> throwError "Integer expected"
         Right value -> setVariable v value
-        
-    
 
 interpretExpr :: Expr -> Interpreter ()
 interpretExpr (ExprString xs) = lift $ lift $ lift $  putStr xs
@@ -160,17 +161,25 @@ calculateLabels :: Program -> Map.Map Label LineNumber
 calculateLabels = calculateLabels' 0
 
 
+usage :: IO ()
+usage = do
+    pn <- getProgName
+    putStrLn $ "Usage : " ++ pn ++ " SOURCE_FILE.bas"
+
 main :: IO ()
 main = do
-    s <- getContents
-    case parseOnly program (pack s) of
-        Left err -> putStrLn err
-        Right v -> do
-            print v 
-            putStrLn "Running program..."
-            r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty)
-            putStrLn "Program run."
-            case r of
+    args <- getArgs
+    case args of 
+        [sourceFileName] -> do 
+            source <- readFile sourceFileName
+            case parseOnly program (pack source) of
                 Left err -> putStrLn err
-                Right () -> putStrLn "Program terminated without error"
-
+                Right v -> do
+                    print v 
+                    putStrLn "Running program..."
+                    r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty)
+                    putStrLn "Program run."
+                    case r of
+                        Left err -> putStrLn $ "Program failed with error : " ++ err
+                        Right () -> putStrLn "Program terminated without error"
+        _ -> usage

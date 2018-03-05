@@ -1,0 +1,2 @@
+INPUT A
+PRINT A+1
