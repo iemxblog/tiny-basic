@@ -179,7 +179,6 @@ main = do
                     print v 
                     putStrLn "Running program..."
                     r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty)
-                    putStrLn "Program run."
                     case r of
                         Left err -> putStrLn $ "Program failed with error : " ++ err
                         Right () -> putStrLn "Program terminated without error"
