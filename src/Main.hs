@@ -4,7 +4,7 @@ import Data.Text hiding (length)
 import Data.Attoparsec.Text
 import qualified Data.Map as Map
 import Control.Monad.State
-import Control.Monad.Trans.Reader
+import Control.Monad.Reader
 import Control.Monad.Error
 import Data.Maybe
 import AST
