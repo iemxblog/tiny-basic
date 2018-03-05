@@ -96,7 +96,16 @@ interpretStatement (Goto e) = do
     case Map.lookup er ls of
         Just l -> setCurrentLine l >> runProgram
         Nothing -> throwError $ "No such label : " ++ show er
+interpretStatement (Input vs) = mapM_ inputVariable vs
     
+inputVariable :: Var -> Interpreter ()
+inputVariable v = do
+    lift $ lift $ lift $ putStr (v:" = ")
+    line <- lift $ lift $ lift getLine
+    case parseOnly decimal (pack line) of
+        Left err -> throwError err
+        Right value -> setVariable v value
+        
     
 
 interpretExpr :: Expr -> Interpreter ()
