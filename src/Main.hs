@@ -61,17 +61,6 @@ setVariable var value = do
     setVariables vs2 
 
 
-calculateLabels' :: LineNumber -> Program -> Labels
-calculateLabels' _ [] = Map.empty
-calculateLabels' ln ((Line (Just la) _):xs) = case la `Map.member` remaining of
-        False -> Map.insert la ln remaining
-        True -> error $ "Duplicate label " ++ show la ++ "on lines " ++ show ln ++ " and " ++ show (fromJust (Map.lookup la remaining))
-    where remaining = calculateLabels' (ln+1) xs
-calculateLabels' ln ((Line Nothing _):xs) = calculateLabels' (ln+1) xs
-
-calculateLabels :: Program -> Map.Map Label LineNumber
-calculateLabels = calculateLabels' 0
-
 runProgram :: Interpreter ()
 runProgram = do
     l <- getCurrentLine
@@ -148,6 +137,19 @@ evalFactor :: Factor -> Interpreter Int
 evalFactor (VarFactor v) = getVariable v
 evalFactor (NumberFactor n) = return n
 evalFactor (ExpressionFactor e) = evalExpression e
+
+
+calculateLabels' :: LineNumber -> Program -> Labels
+calculateLabels' _ [] = Map.empty
+calculateLabels' ln ((Line (Just la) _):xs) = case la `Map.member` remaining of
+        False -> Map.insert la ln remaining
+        True -> error $ "Duplicate label " ++ show la ++ "on lines " ++ show ln ++ " and " ++ show (fromJust (Map.lookup la remaining))
+    where remaining = calculateLabels' (ln+1) xs
+calculateLabels' ln ((Line Nothing _):xs) = calculateLabels' (ln+1) xs
+
+calculateLabels :: Program -> Map.Map Label LineNumber
+calculateLabels = calculateLabels' 0
+
 
 main :: IO ()
 main = do
