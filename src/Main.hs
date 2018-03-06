@@ -74,13 +74,12 @@ runProgram = do
         return ()
 
 interpretLine :: Line -> Interpreter ()
-interpretLine (Line _ s) = interpretStatement s
+interpretLine (Line _ s) = interpretStatement s >> incLine
 
 interpretStatement :: Statement -> Interpreter ()
 interpretStatement (Print xs) = do
     mapM_ interpretExpr xs
     lift $ lift $ lift $ putStr "\n"
-    incLine
 interpretStatement (If e1 ro e2 s) = do
     e1r <- evalExpression e1
     e2r <- evalExpression e2
@@ -91,15 +90,14 @@ interpretStatement (If e1 ro e2 s) = do
         GreaterThan -> if e1r > e2r then interpretStatement s else return ()
         GreaterThanOrEqual -> if e1r >= e2r then interpretStatement s else return ()
         Equal -> if e1r == e2r then interpretStatement s else return ()
-    incLine
 interpretStatement (Goto e) = do
     er <- evalExpression e
     ls <- getLabels
     case Map.lookup er ls of
         Just l -> setCurrentLine l >> runProgram
         Nothing -> throwError $ "No such label : " ++ show er
-interpretStatement (Input vs) = mapM_ inputVariable vs >> incLine
-interpretStatement (Let vn e) = evalExpression e >>= setVariable vn >> incLine
+interpretStatement (Input vs) = mapM_ inputVariable vs
+interpretStatement (Let vn e) = evalExpression e >>= setVariable vn
     
 inputVariable :: Var -> Interpreter ()
 inputVariable v = do
