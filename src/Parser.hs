@@ -6,6 +6,7 @@ module Parser (
 import Data.Attoparsec.Text
 import Data.Text
 import Control.Applicative
+import Control.Monad
 import AST
 
 
@@ -20,7 +21,7 @@ symbol :: Text -> Parser Text
 symbol = token . string
 
 program :: Parser Program
-program = many' line
+program = liftM Program $ many' line
 
 line :: Parser Line
 line = try labeledLine <|> nonLabeledLine

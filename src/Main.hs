@@ -66,9 +66,9 @@ setVariable var value = do
 runProgram :: Interpreter ()
 runProgram = do
     l <- getCurrentLine
-    p <- getProgram
-    if l < length p then do
-        interpretLine (p !! l)
+    pls <- liftM getProgramLines getProgram
+    if l < length pls then do
+        interpretLine (pls !! l)
         runProgram
     else
         return ()
@@ -149,12 +149,12 @@ evalFactor (ExpressionFactor e) = evalExpression e
 
 
 calculateLabels' :: LineNumber -> Program -> Labels
-calculateLabels' _ [] = Map.empty
-calculateLabels' ln ((Line (Just la) _):xs) = case la `Map.member` remaining of
+calculateLabels' _ (Program []) = Map.empty
+calculateLabels' ln (Program ((Line (Just la) _):xs)) = case la `Map.member` remaining of
         False -> Map.insert la ln remaining
         True -> error $ "Duplicate label " ++ show la ++ "on lines " ++ show ln ++ " and " ++ show (fromJust (Map.lookup la remaining))
-    where remaining = calculateLabels' (ln+1) xs
-calculateLabels' ln ((Line Nothing _):xs) = calculateLabels' (ln+1) xs
+    where remaining = calculateLabels' (ln+1) (Program xs)
+calculateLabels' ln (Program ((Line Nothing _):xs)) = calculateLabels' (ln+1) (Program xs)
 
 calculateLabels :: Program -> Map.Map Label LineNumber
 calculateLabels = calculateLabels' 0
