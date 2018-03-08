@@ -24,7 +24,7 @@ program :: Parser Program
 program = liftM Program $ many' line
 
 line :: Parser Line
-line = try labeledLine <|> nonLabeledLine
+line = try labeledLine <|> try nonLabeledLine <|> emptyLine
 
 labeledLine :: Parser Line
 labeledLine = do
@@ -38,6 +38,9 @@ nonLabeledLine = do
     s <- statement 
     symbol "\n"
     return $ Line Nothing s
+
+emptyLine :: Parser Line
+emptyLine = symbol "\n" >> return EmptyLine
 
 statement :: Parser Statement
 statement = 

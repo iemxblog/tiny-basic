@@ -19,7 +19,10 @@ newtype Program = Program {getProgramLines :: [Line] } deriving Eq
 
 type Label = Int
 
-data Line = Line (Maybe Label) Statement deriving Eq
+data Line = 
+    Line (Maybe Label) Statement 
+    | EmptyLine
+    deriving Eq
 
 data Statement =
     Print [Expr] 
@@ -62,6 +65,7 @@ instance Show Program where
 
 instance Show Line where
     show (Line ml s) = maybe "" ((++ " ") . show) ml ++ show s
+    show EmptyLine = ""
 
 instance Show Statement where
     show (Print xs) = "PRINT " ++ (concat . intersperse ", " . map show) xs

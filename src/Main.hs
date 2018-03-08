@@ -75,6 +75,7 @@ runProgram = do
 
 interpretLine :: Line -> Interpreter ()
 interpretLine (Line _ s) = interpretStatement s >> incLine
+interpretLine EmptyLine = incLine
 
 interpretStatement :: Statement -> Interpreter ()
 interpretStatement (Print xs) = do
@@ -155,6 +156,7 @@ calculateLabels' ln (Program ((Line (Just la) _):xs)) = case la `Map.member` rem
         True -> error $ "Duplicate label " ++ show la ++ "on lines " ++ show ln ++ " and " ++ show (fromJust (Map.lookup la remaining))
     where remaining = calculateLabels' (ln+1) (Program xs)
 calculateLabels' ln (Program ((Line Nothing _):xs)) = calculateLabels' (ln+1) (Program xs)
+calculateLabels' ln (Program (EmptyLine:xs)) = calculateLabels' (ln+1) (Program xs)
 
 calculateLabels :: Program -> Map.Map Label LineNumber
 calculateLabels = calculateLabels' 0
