@@ -15,8 +15,9 @@ import Parser
 type LineNumber = Int
 type Variables = Map.Map Char Int
 type Labels = Map.Map Label LineNumber
+type CallStack = [LineNumber]
 type Environment = (Program, Labels)
-type ProgramState = (LineNumber, Variables)
+type ProgramState = (LineNumber, Variables, CallStack)
 
 type Interpreter a = ErrorT String (ReaderT Environment (StateT ProgramState IO)) a
 
@@ -29,8 +30,8 @@ getLabels = liftM snd (lift ask)
 
 setCurrentLine :: Int -> Interpreter ()
 setCurrentLine l = do
-    (_, vs) <- lift $ lift get
-    lift $ lift $ put (l, vs)
+    (_, vs, cs) <- lift $ lift get
+    lift $ lift $ put (l, vs, cs)
     
 incLine :: Interpreter ()
 incLine = do
@@ -38,15 +39,15 @@ incLine = do
     setCurrentLine (l+1)
 
 getCurrentLine :: Interpreter Int
-getCurrentLine = liftM fst $ lift $ lift get
+getCurrentLine = liftM (\(l, _, _) -> l) $ lift $ lift get
 
 getVariables :: Interpreter Variables
-getVariables = liftM snd (lift $ lift get)
+getVariables = liftM (\(_, vs, _) -> vs) $ lift $ lift get
 
 setVariables :: Variables -> Interpreter ()
 setVariables vs = do
-    (l, _) <- lift $ lift get
-    lift $ lift $ put (l, vs)
+    (l, _, cs) <- lift $ lift get
+    lift $ lift $ put (l, vs, cs)
 
 getVariable :: Var -> Interpreter Int
 getVariable vn = do
@@ -62,6 +63,26 @@ setVariable var value = do
     let vs2 = Map.insert var value vs
     setVariables vs2 
 
+getCallStack :: Interpreter CallStack
+getCallStack = liftM (\(_, _, cs) -> cs) $ lift $ lift get
+
+setCallStack :: CallStack -> Interpreter ()
+setCallStack cs = do
+    (l, vs, _) <- lift $ lift $ get
+    lift $ lift $ put (l, vs, cs)
+
+push :: Interpreter ()
+push = do
+    l <- getCurrentLine
+    cs <- getCallStack
+    setCallStack (l:cs)
+
+pop :: Interpreter ()
+pop = do
+    cs <- getCallStack
+    case cs of
+        [] -> throwError "Popped empty stack"
+        (l:ncs) -> setCurrentLine l >> setCallStack ncs
 
 runProgram :: Interpreter ()
 runProgram = do
@@ -91,15 +112,20 @@ interpretStatement (If e1 ro e2 s) = do
         GreaterThan -> if e1r > e2r then interpretStatement s else return ()
         GreaterThanOrEqual -> if e1r >= e2r then interpretStatement s else return ()
         Equal -> if e1r == e2r then interpretStatement s else return ()
-interpretStatement (Goto e) = do
+interpretStatement (Goto e) = goto e 
+interpretStatement (Input vs) = mapM_ inputVariable vs
+interpretStatement (Let vn e) = evalExpression e >>= setVariable vn
+interpretStatement (GoSub e) = push >> goto e
+interpretStatement Return = pop
+   
+goto :: Expression -> Interpreter ()
+goto e = do
     er <- evalExpression e
     ls <- getLabels
     case Map.lookup er ls of
         Just l -> setCurrentLine l >> runProgram
         Nothing -> throwError $ "No such label : " ++ show er
-interpretStatement (Input vs) = mapM_ inputVariable vs
-interpretStatement (Let vn e) = evalExpression e >>= setVariable vn
-    
+
 inputVariable :: Var -> Interpreter ()
 inputVariable v = do
     lift $ lift $ lift $ putStr (v:" = ")
@@ -178,7 +204,7 @@ main = do
                 Right v -> do
                     print v 
                     putStrLn "Running program..."
-                    r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty)
+                    r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty, [])
                     case r of
                         Left err -> putStrLn $ "Program failed with error : " ++ err
                         Right () -> putStrLn "Program terminated without error"
