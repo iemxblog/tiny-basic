@@ -22,6 +22,8 @@ type ProgramState = (LineNumber, Variables, CallStack, RunState)
 
 type Interpreter a = ErrorT String (ReaderT Environment (StateT ProgramState IO)) a
 
+interpreterError :: String -> Interpreter a
+interpreterError msg = getCurrentLine >>= \l -> throwError $ "Line " ++ show (l+1) ++ ": " ++ msg
 
 getProgram :: Interpreter Program
 getProgram = liftM fst (lift ask)
@@ -54,7 +56,7 @@ getVariable :: Var -> Interpreter Int
 getVariable vn = do
     vs <- getVariables
     case Map.lookup vn vs of
-        Nothing -> throwError $ "Unknown variable " ++ [vn]
+        Nothing -> interpreterError $ "Unknown variable " ++ [vn]
         Just vv -> return vv
 
 
@@ -82,7 +84,7 @@ pop :: Interpreter ()
 pop = do
     cs <- getCallStack
     case cs of
-        [] -> throwError "Popped empty stack"
+        [] -> interpreterError "Popped empty stack"
         (l:ncs) -> setCurrentLine l >> setCallStack ncs
 
 isRunning :: Interpreter RunState
@@ -136,7 +138,7 @@ goto e = do
     ls <- getLabels
     case Map.lookup er ls of
         Just l -> setCurrentLine l >> runProgram
-        Nothing -> throwError $ "No such label : " ++ show er
+        Nothing -> interpreterError $ "No such label : " ++ show er
 
 inputVariable :: Var -> Interpreter ()
 inputVariable v = do
@@ -144,7 +146,7 @@ inputVariable v = do
     lift $ lift $ lift $ hFlush stdout
     line <- lift $ lift $ lift getLine
     case parseOnly decimal (pack line) of
-        Left err -> throwError "Integer expected"
+        Left err -> interpreterError "Integer expected"
         Right value -> setVariable v value
 
 interpretExpr :: Expr -> Interpreter ()
