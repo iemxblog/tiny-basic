@@ -16,8 +16,9 @@ type LineNumber = Int
 type Variables = Map.Map Char Int
 type Labels = Map.Map Label LineNumber
 type CallStack = [LineNumber]
+type RunState = Bool
 type Environment = (Program, Labels)
-type ProgramState = (LineNumber, Variables, CallStack)
+type ProgramState = (LineNumber, Variables, CallStack, RunState)
 
 type Interpreter a = ErrorT String (ReaderT Environment (StateT ProgramState IO)) a
 
@@ -30,8 +31,8 @@ getLabels = liftM snd (lift ask)
 
 setCurrentLine :: Int -> Interpreter ()
 setCurrentLine l = do
-    (_, vs, cs) <- lift $ lift get
-    lift $ lift $ put (l, vs, cs)
+    (_, vs, cs, rn) <- lift $ lift get
+    lift $ lift $ put (l, vs, cs, rn)
     
 incLine :: Interpreter ()
 incLine = do
@@ -39,15 +40,15 @@ incLine = do
     setCurrentLine (l+1)
 
 getCurrentLine :: Interpreter Int
-getCurrentLine = liftM (\(l, _, _) -> l) $ lift $ lift get
+getCurrentLine = liftM (\(l, _, _, _) -> l) $ lift $ lift get
 
 getVariables :: Interpreter Variables
-getVariables = liftM (\(_, vs, _) -> vs) $ lift $ lift get
+getVariables = liftM (\(_, vs, _, _) -> vs) $ lift $ lift get
 
 setVariables :: Variables -> Interpreter ()
 setVariables vs = do
-    (l, _, cs) <- lift $ lift get
-    lift $ lift $ put (l, vs, cs)
+    (l, _, cs, rn) <- lift $ lift get
+    lift $ lift $ put (l, vs, cs, rn)
 
 getVariable :: Var -> Interpreter Int
 getVariable vn = do
@@ -64,12 +65,12 @@ setVariable var value = do
     setVariables vs2 
 
 getCallStack :: Interpreter CallStack
-getCallStack = liftM (\(_, _, cs) -> cs) $ lift $ lift get
+getCallStack = liftM (\(_, _, cs, _) -> cs) $ lift $ lift get
 
 setCallStack :: CallStack -> Interpreter ()
 setCallStack cs = do
-    (l, vs, _) <- lift $ lift $ get
-    lift $ lift $ put (l, vs, cs)
+    (l, vs, _, rn) <- lift $ lift $ get
+    lift $ lift $ put (l, vs, cs, rn)
 
 push :: Interpreter ()
 push = do
@@ -84,11 +85,20 @@ pop = do
         [] -> throwError "Popped empty stack"
         (l:ncs) -> setCurrentLine l >> setCallStack ncs
 
+isRunning :: Interpreter RunState
+isRunning = liftM (\(_, _, _, rn) -> rn) $ lift $ lift get
+
+stop :: Interpreter ()
+stop = do
+    (l, vs, cs, _) <- lift $ lift $ get 
+    lift $ lift $ put (l, vs, cs, False)
+
 runProgram :: Interpreter ()
 runProgram = do
     l <- getCurrentLine
     pls <- liftM getProgramLines getProgram
-    if l < length pls then do
+    r <- isRunning
+    if l < length pls && r then do
         interpretLine (pls !! l)
         runProgram
     else
@@ -118,6 +128,7 @@ interpretStatement (Let vn e) = evalExpression e >>= setVariable vn
 interpretStatement (GoSub e) = push >> goto e
 interpretStatement Return = pop
 interpretStatement Clear = setVariables Map.empty
+interpretStatement End = stop
    
 goto :: Expression -> Interpreter ()
 goto e = do
@@ -205,7 +216,7 @@ main = do
                 Right v -> do
                     print v 
                     putStrLn "Running program..."
-                    r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty, [])
+                    r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty, [], True)
                     case r of
                         Left err -> putStrLn $ "Program failed with error : " ++ err
                         Right () -> putStrLn "Program terminated without error"
