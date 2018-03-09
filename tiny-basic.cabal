@@ -16,8 +16,8 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
-executable tiny-basic
-  main-is:             Main.hs
+executable tiny-basic-interpreter
+  main-is:             Interpreter.hs
   -- other-modules:       
   -- other-extensions:    
   build-depends:
