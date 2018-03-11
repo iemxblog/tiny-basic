@@ -114,7 +114,7 @@ endStatement :: Parser Statement
 endStatement = symbol "END" >> return End
 
 exprList :: Parser [Expr]
-exprList = many1 expr
+exprList = expr `sepBy1` symbol ","
 
 expr :: Parser Expr
 expr =
