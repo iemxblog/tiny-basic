@@ -1,8 +1,11 @@
 module Variables (
-    HasVars(..)
+    variables,
+    checkVariables
 ) where
 
 import qualified Data.Set as Set
+import Data.List
+import Control.Monad
 import AST
 
 class HasVars a where
@@ -69,3 +72,25 @@ instance HasVars Factor where
     usedVariables (VarFactor v) = Set.singleton v
     usedVariables (NumberFactor _) = Set.empty
     usedVariables (ExpressionFactor e) = usedVariables e
+
+variables :: Program -> [Var]
+variables = Set.toAscList . initializedVariables 
+
+uninitializedVariables :: Program -> Set.Set Var
+uninitializedVariables p = usedVariables p `Set.difference` initializedVariables p
+
+unusedVariables :: Program -> Set.Set Var
+unusedVariables p = initializedVariables p `Set.difference` usedVariables p
+
+checkVariables :: Program -> IO Bool
+checkVariables p = do
+    let uiv = uninitializedVariables p
+    if uiv /= Set.empty then do
+        putStrLn $ "Error : Variable(s) " ++ buildString uiv ++ " are never initialized before use"
+        return False
+    else do
+        let uuv = unusedVariables p
+        when (uuv /= Set.empty) $
+            putStrLn $ "Warning : Variable(s) " ++ buildString uuv ++ " are initialized but never used" 
+        return True
+    where buildString = concat . intersperse ", " . map (\v -> [v]) . Set.toAscList
