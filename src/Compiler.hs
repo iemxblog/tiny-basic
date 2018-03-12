@@ -13,7 +13,7 @@ assemblySource :: Program -> String
 assemblySource p = dataSection p ++ textSection p
 
 dataSection :: Program -> String
-dataSection p = ".data\n.balign4\n" ++ (unlines . map (\v -> "var" ++ [v] ++ ":\n    .word 0") $ variables p)
+dataSection p = ".data\n.balign 4\n" ++ (unlines . map (\v -> "var" ++ [v] ++ ":\n    .word 0") $ variables p)
 
 textSection :: Program -> String
 textSection p = ".text\n" ++ relocation p
