@@ -10,5 +10,4 @@ RETURN
 LET R = 1
 GOSUB 10
 
-PRINT "result"
-PRINT R
+PRINT "N! = ", R

@@ -195,6 +195,6 @@ relop =
 bstring :: Parser String
 bstring = token $ do
     char '"'
-    s <- many' (digit <|> letter)
+    s <- many' (satisfy $ notInClass "\n\"")
     char '"'
     return $ s
