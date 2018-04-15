@@ -147,12 +147,26 @@ idiv =
     <> instr "div r0, r0, r1"
     <> instr "push {r0}"
 
-eq :: Int -> ASMCode
-eq i =
+lt :: Int -> ASMCode
+lt i =
     instr "pop {r1}"
     <> instr "pop {r0}"
     <> instr "cmp r0, r1"
-    <> instr ("bne else" ++ show i)
+    <> instr ("bge else" ++ show i)
+
+different :: Int -> ASMCode
+different i =
+    instr "pop {r1}"
+    <> instr "pop {r0}"
+    <> instr "cmp r0, r1"
+    <> instr ("beq else" ++ show i)
+
+lte :: Int -> ASMCode
+lte i =
+    instr "pop {r1}"
+    <> instr "pop {r0}"
+    <> instr "cmp r0, r1"
+    <> instr ("bgt else" ++ show i)
 
 gt :: Int -> ASMCode
 gt i =
@@ -160,6 +174,20 @@ gt i =
     <> instr "pop {r0}"
     <> instr "cmp r0, r1"
     <> instr ("ble else" ++ show i)
+
+gte :: Int -> ASMCode
+gte i =
+    instr "pop {r1}"
+    <> instr "pop {r0}"
+    <> instr "cmp r0, r1"
+    <> instr ("blt else" ++ show i)
+
+eq :: Int -> ASMCode
+eq i =
+    instr "pop {r1}"
+    <> instr "pop {r0}"
+    <> instr "cmp r0, r1"
+    <> instr ("bne else" ++ show i)
 
 aElse :: Int -> ASMCode
 aElse i = label ("else" ++ show i)
