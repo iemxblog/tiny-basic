@@ -98,7 +98,7 @@ genCode p =
 -- Intermediate representation
 
 gLabel :: Int -> ASMCode
-gLabel i = ASMCode Set.empty Map.empty (Set.singleton i) ("label_" ++ show i) Set.empty Set.empty
+gLabel i = ASMCode Set.empty Map.empty (Set.singleton i) ("label_" ++ show i ++ ":\n") Set.empty Set.empty
 
 pushV :: Var -> ASMCode
 pushV v = 
