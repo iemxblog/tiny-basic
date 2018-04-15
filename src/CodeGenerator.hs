@@ -28,6 +28,29 @@ instance Monoid ASMCode where
         ASMCode (v1 `Set.union` v2) (s1 `Map.union` s2) (l1 `Set.union` l2) (i1 ++ i2) (r1 `Set.union` r2) (ef1 `Set.union` ef2)
 
 
+-- ####################
+-- 'Smart' constructors
+
+var :: Var -> ASMCode
+var v = ASMCode (Set.singleton v) Map.empty Set.empty "" (Set.singleton [v]) Set.empty
+
+string ::   String          -- ^ String Name 
+            -> String       -- ^ String value
+            -> ASMCode
+string sn sv = ASMCode Set.empty (Map.singleton sn sv) Set.empty "" (Set.singleton sn) Set.empty
+
+label :: String -> ASMCode
+label s = ASMCode Set.empty Map.empty Set.empty (s ++ ":\n") Set.empty Set.empty
+
+instr :: String -> ASMCode
+instr s = ASMCode Set.empty Map.empty Set.empty (indent ++ s ++ "\n") Set.empty Set.empty
+
+externalFunction :: String -> ASMCode
+externalFunction s = ASMCode Set.empty Map.empty Set.empty "" Set.empty (Set.singleton s)
+
+-- #####################
+-- Final code generation
+
 genVariables :: ASMCode -> String
 genVariables (ASMCode vs _ _ _ _ _) =
     Set.foldr (\v s -> s ++ [v] ++ ": .word 0\n") "" vs
@@ -70,22 +93,9 @@ genCode p =
     genDataSection p
     ++ genTextSection p
 
-var :: Var -> ASMCode
-var v = ASMCode (Set.singleton v) Map.empty Set.empty "" (Set.singleton [v]) Set.empty
 
-string ::   String          -- ^ String Name 
-            -> String       -- ^ String value
-            -> ASMCode
-string sn sv = ASMCode Set.empty (Map.singleton sn sv) Set.empty "" (Set.singleton sn) Set.empty
-
-label :: String -> ASMCode
-label s = ASMCode Set.empty Map.empty Set.empty (s ++ ":\n") Set.empty Set.empty
-
-instr :: String -> ASMCode
-instr s = ASMCode Set.empty Map.empty Set.empty (indent ++ s ++ "\n") Set.empty Set.empty
-
-externalFunction :: String -> ASMCode
-externalFunction s = ASMCode Set.empty Map.empty Set.empty "" Set.empty (Set.singleton s)
+-- ###########################
+-- Intermediate representation
 
 gLabel :: Int -> ASMCode
 gLabel i = ASMCode Set.empty Map.empty (Set.singleton i) ("label_" ++ show i) Set.empty Set.empty
@@ -212,6 +222,8 @@ endMain =
     <> instr "mov r0, #0"
     <> instr "bx lr"
 
+-- #################
+-- Factorial example
 
 factorial :: ASMCode
 factorial =
