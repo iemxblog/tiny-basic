@@ -1,5 +1,30 @@
 module CodeGenerator (
-    genCode
+    ASMCode
+    , genCode
+    , gLabel
+    , pushV
+    , pushI
+    , store
+    , add
+    , sub
+    , mul
+    , idiv
+    , lt
+    , different
+    , lte
+    , gt        
+    , gte
+    , eq
+    , aElse
+    , goto
+    , gosub
+    , aReturn
+    , printString
+    , printInt
+    , printNewLine
+    , input
+    , aMain
+    , endMain
     , factorial
 ) where
 
