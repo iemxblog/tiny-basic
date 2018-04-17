@@ -7,6 +7,7 @@ module CodeGenerator (
     , store
     , add
     , sub
+    , neg
     , mul
     , idiv
     , lt
@@ -156,6 +157,12 @@ sub =
     instr "pop {r1}"
     <> instr "pop {r0}"
     <> instr "sub r0, r0, r1"
+    <> instr "push {r0}"
+
+neg :: ASMCode
+neg = 
+    instr "pop {r1}"
+    <> instr "neg r0, r1"
     <> instr "push {r0}"
 
 mul :: ASMCode
