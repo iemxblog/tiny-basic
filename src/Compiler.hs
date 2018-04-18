@@ -20,10 +20,10 @@ putStringMap :: Map.Map String Int -> Compiler ()
 putStringMap sm = modify (\(_, ic) -> (sm, ic))
    
 getIfCounter :: Compiler Int
-getIfCounter = liftM snd get
-
-incIfCounter :: Compiler ()
-incIfCounter = modify (\(sm, ic) -> (sm, ic+1)) 
+getIfCounter = do
+    c <- liftM snd get
+    modify (\(sm, ic) -> (sm, ic+1))
+    return c
 
 getStringName :: String -> Compiler String
 getStringName sv = do
@@ -61,6 +61,29 @@ instance Compilable Statement where
         ce <- compile e
         cs <- compile (Print xs)
         return $ ce <> printInt <> cs
+    compile (If e1 ro e2 st) = do
+        ce1 <- compile e1
+        ce2 <- compile e2
+        ic <- getIfCounter
+        cst <- compile st
+        let cro = case ro of
+                    LessThan -> lt ic
+                    Different -> different ic
+                    LessThanOrEqual -> lte ic
+                    GreaterThan -> gt ic
+                    GreaterThanOrEqual -> gte ic
+                    Equal -> eq ic
+        return $ ce1 <> ce2 <> cro <> cst <> aElse ic
+    compile (Goto e) = compile e >>= \ce -> return $ ce <> goto
+    compile (Input []) = return mempty
+    compile (Input (v:vs)) = do
+        civs <- compile (Input vs)
+        return $ input v <> civs
+    compile (Let v e) = do
+        ce <- compile e
+        return $ ce <> store v
+    compile (GoSub e) = compile e >>= \ce -> return $ ce <> gosub
+    compile Return = return aReturn
 
 instance Compilable Expression where
     compile (Expression s t xs) = do
