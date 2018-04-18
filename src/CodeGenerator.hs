@@ -137,7 +137,7 @@ lineComment :: String -> ASMCode
 lineComment s = emptyLine <> comment s
 
 gLabel :: Int -> ASMCode
-gLabel i = label $ "label_" ++ show i
+gLabel i = ASMCode Set.empty Map.empty (Set.singleton i) ("label_" ++ show i ++ ":\n") Set.empty Set.empty
 
 pushV :: Var -> ASMCode
 pushV v = 
