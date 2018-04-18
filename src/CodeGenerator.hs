@@ -1,6 +1,7 @@
 module CodeGenerator (
     ASMCode
     , genCode
+    , lineComment
     , gLabel
     , pushV
     , pushI
@@ -68,6 +69,12 @@ string sn sv = ASMCode Set.empty (Map.singleton sn sv) Set.empty "" (Set.singlet
 label :: String -> ASMCode
 label s = ASMCode Set.empty Map.empty Set.empty (s ++ ":\n") Set.empty Set.empty
 
+comment :: String -> ASMCode
+comment s = ASMCode Set.empty Map.empty Set.empty ("# " ++ s ++ "\n") Set.empty Set.empty
+
+emptyLine :: ASMCode
+emptyLine = ASMCode Set.empty Map.empty Set.empty "\n" Set.empty Set.empty
+
 instr :: String -> ASMCode
 instr s = ASMCode Set.empty Map.empty Set.empty (indent ++ s ++ "\n") Set.empty Set.empty
 
@@ -123,8 +130,11 @@ genCode p =
 -- ###########################
 -- Intermediate representation
 
+lineComment :: String -> ASMCode
+lineComment s = emptyLine <> comment s
+
 gLabel :: Int -> ASMCode
-gLabel i = ASMCode Set.empty Map.empty (Set.singleton i) ("label_" ++ show i ++ ":\n") Set.empty Set.empty
+gLabel i = label $ "label_" ++ show i
 
 pushV :: Var -> ASMCode
 pushV v = 
