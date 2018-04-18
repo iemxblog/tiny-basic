@@ -27,7 +27,6 @@ module CodeGenerator (
     , input
     , aMain
     , endMain
-    , factorial
 ) where
 
 import Data.Monoid
@@ -295,8 +294,8 @@ endMain =
     <> instr "mov r0, #0"
     <> instr "bx lr"
 
--- #################
--- Factorial example
+-- ##################################################
+-- Factorial example - just for documentation purpose
 
 factorial :: ASMCode
 factorial =
