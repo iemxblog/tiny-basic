@@ -155,7 +155,7 @@ store v =
     var v
     <> instr "pop {r0}"
     <> instr ("ldr r1, address_of_" ++ [v])
-    <> instr ("str r0, [r1]")
+    <> instr "str r0, [r1]"
 
 add :: ASMCode
 add = 
@@ -258,7 +258,7 @@ printString sn sv =
     string sn sv
     <> externalFunction "printf"
     <> instr ("ldr r0, address_of_" ++ sn)
-    <> instr ("bl printf")
+    <> instr "bl printf"
 
 printInt :: ASMCode
 printInt =

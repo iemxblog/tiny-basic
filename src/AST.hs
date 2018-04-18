@@ -68,10 +68,10 @@ instance Show Line where
     show EmptyLine = ""
 
 instance Show Statement where
-    show (Print xs) = "PRINT " ++ (concat . intersperse ", " . map show) xs
+    show (Print xs) = "PRINT " ++ (intercalate ", " . map show) xs
     show (If e1 ro e2 s) = "IF " ++ show e1 ++ " " ++ show ro ++ " " ++ show e2 ++ " THEN " ++ show s
     show (Goto e) = "GOTO " ++ show e
-    show (Input xs) = "INPUT " ++ (concat . intersperse ", " . map (\x -> [x])) xs
+    show (Input xs) = "INPUT " ++ (intercalate ", " . map (\x -> [x])) xs
     show (Let v e) = "LET " ++ [v] ++ " = " ++ show e
     show (GoSub e) = "GOSUB " ++ show e
     show Return = "RETURN"

@@ -55,14 +55,14 @@ instance HasVars Expr where
     usedVariables (ExprExpr e) = usedVariables e
 
 instance HasVars Expression where
-    initializedVariables (Expression _ _ _) = Set.empty
+    initializedVariables Expression{} = Set.empty
     
-    usedVariables (Expression _ t1 xs) = usedVariables t1 `Set.union` (Set.unions $ map (\(_, t) -> usedVariables t) xs)
+    usedVariables (Expression _ t1 xs) = usedVariables t1 `Set.union` Set.unions (map (\(_, t) -> usedVariables t) xs)
 
 instance HasVars Term where
     initializedVariables (Term _ _) = Set.empty
     
-    usedVariables (Term f1 xs) = usedVariables f1 `Set.union` (Set.unions $ map (\(_, f) -> usedVariables f) xs)
+    usedVariables (Term f1 xs) = usedVariables f1 `Set.union` Set.unions (map (\(_, f) -> usedVariables f) xs)
 
 instance HasVars Factor where
     initializedVariables (VarFactor _) = Set.empty
@@ -93,4 +93,4 @@ checkVariables p = do
         when (uuv /= Set.empty) $
             putStrLn $ "Warning : Variable(s) " ++ buildString uuv ++ " are initialized but never used" 
         return True
-    where buildString = concat . intersperse ", " . map (\v -> [v]) . Set.toAscList
+    where buildString = intercalate ", " . map (\v -> [v]) . Set.toAscList

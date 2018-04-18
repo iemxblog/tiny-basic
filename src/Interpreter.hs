@@ -6,6 +6,7 @@ import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Error
+import Control.Monad
 import Data.Maybe
 import System.Environment
 import System.IO
@@ -71,7 +72,7 @@ getCallStack = liftM (\(_, _, cs, _) -> cs) $ lift $ lift get
 
 setCallStack :: CallStack -> Interpreter ()
 setCallStack cs = do
-    (l, vs, _, rn) <- lift $ lift $ get
+    (l, vs, _, rn) <- lift $ lift get
     lift $ lift $ put (l, vs, cs, rn)
 
 push :: Interpreter ()
@@ -92,7 +93,7 @@ isRunning = liftM (\(_, _, _, rn) -> rn) $ lift $ lift get
 
 stop :: Interpreter ()
 stop = do
-    (l, vs, cs, _) <- lift $ lift $ get 
+    (l, vs, cs, _) <- lift $ lift get 
     lift $ lift $ put (l, vs, cs, False)
 
 runProgram :: Interpreter ()
@@ -100,11 +101,9 @@ runProgram = do
     l <- getCurrentLine
     pls <- liftM getProgramLines getProgram
     r <- isRunning
-    if l < length pls && r then do
+    when (l < length pls && r) $ do
         interpretLine (pls !! l)
         runProgram
-    else
-        return ()
 
 interpretLine :: Line -> Interpreter ()
 interpretLine (Line _ s) = interpretStatement s >> incLine
@@ -118,12 +117,12 @@ interpretStatement (If e1 ro e2 s) = do
     e1r <- evalExpression e1
     e2r <- evalExpression e2
     case ro of
-        LessThan -> if e1r < e2r then interpretStatement s else return ()
-        Different -> if e1r /= e2r then interpretStatement s else return ()
-        LessThanOrEqual -> if e1r <= e2r then interpretStatement s else return ()
-        GreaterThan -> if e1r > e2r then interpretStatement s else return ()
-        GreaterThanOrEqual -> if e1r >= e2r then interpretStatement s else return ()
-        Equal -> if e1r == e2r then interpretStatement s else return ()
+        LessThan -> when (e1r < e2r) $ interpretStatement s
+        Different -> when (e1r /= e2r) $ interpretStatement s 
+        LessThanOrEqual -> when (e1r <= e2r) $ interpretStatement s
+        GreaterThan -> when (e1r > e2r) $ interpretStatement s
+        GreaterThanOrEqual -> when (e1r >= e2r) $ interpretStatement s
+        Equal -> when (e1r == e2r) $ interpretStatement s
 interpretStatement (Goto e) = goto e 
 interpretStatement (Input vs) = mapM_ inputVariable vs
 interpretStatement (Let vn e) = evalExpression e >>= setVariable vn
@@ -191,11 +190,11 @@ evalFactor (ExpressionFactor e) = evalExpression e
 
 calculateLabels' :: LineNumber -> Program -> Labels
 calculateLabels' _ (Program []) = Map.empty
-calculateLabels' ln (Program ((Line (Just la) _):xs)) = case la `Map.member` remaining of
+calculateLabels' ln (Program (Line (Just la) _ : xs)) = case la `Map.member` remaining of
         False -> Map.insert la ln remaining
         True -> error $ "Duplicate label " ++ show la ++ "on lines " ++ show ln ++ " and " ++ show (fromJust (Map.lookup la remaining))
     where remaining = calculateLabels' (ln+1) (Program xs)
-calculateLabels' ln (Program ((Line Nothing _):xs)) = calculateLabels' (ln+1) (Program xs)
+calculateLabels' ln (Program (Line Nothing _ : xs)) = calculateLabels' (ln+1) (Program xs)
 calculateLabels' ln (Program (EmptyLine:xs)) = calculateLabels' (ln+1) (Program xs)
 
 calculateLabels :: Program -> Map.Map Label LineNumber

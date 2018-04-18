@@ -28,7 +28,7 @@ getIfCounter = do
 getStringName :: String -> Compiler String
 getStringName sv = do
     m <- getStringMap
-    let nsi = (Map.foldr max 0 m) + 1   -- nsi : new string index
+    let nsi = Map.foldr max 0 m + 1   -- nsi : new string index
     case Map.lookup sv m of
         Just i -> return $ "string" ++ show i
         Nothing -> putStringMap (Map.insert sv nsi m) >> return ("string" ++ show nsi)
@@ -42,7 +42,7 @@ class Compilable a where
 
 
 instance Compilable Program where
-    compile (Program ls) = (liftM mconcat $ mapM compile ls) >>= \cp -> return $ aMain <> cp <> endMain
+    compile (Program ls) = liftM mconcat (mapM compile ls) >>= \cp -> return $ aMain <> cp <> endMain
 
 instance Compilable Line where
     compile li@(Line (Just l) st) = do
@@ -53,11 +53,11 @@ instance Compilable Line where
 
 instance Compilable Statement where
     compile (Print []) = return printNewLine
-    compile (Print ((ExprString sv):xs)) = do
+    compile (Print (ExprString sv : xs)) = do
         sn <- getStringName sv
         c <- compile (Print xs)
         return $ printString sn sv <> c
-    compile (Print ((ExprExpr e):xs)) = do
+    compile (Print (ExprExpr e : xs)) = do
         ce <- compile e
         cs <- compile (Print xs)
         return $ ce <> printInt <> cs

@@ -1,6 +1,6 @@
 module Main where
 
-import Data.Text hiding (unlines, map, concatMap)
+import Data.Text
 import System.Environment
 import Data.Attoparsec.Text
 import Control.Monad

@@ -122,7 +122,7 @@ expr =
     <|> (expression >>= \e -> return $ ExprExpr e)
 
 varList :: Parser [Var]
-varList = var `sepBy` (symbol ",")
+varList = var `sepBy` symbol ","
 
 expression :: Parser Expression
 expression = do
@@ -179,9 +179,7 @@ multSymbol :: Parser MultSymbol
 multSymbol = try (symbol "*" >> return Mult) <|> (symbol "/" >> return Div)
 
 var :: Parser Var
-var = token $ do
-    c <- satisfy (inClass "A-Z")
-    return $ c
+var = token $ satisfy (inClass "A-Z")
 
 relop :: Parser Relop
 relop = 
@@ -197,4 +195,4 @@ bstring = token $ do
     char '"'
     s <- many' (satisfy $ notInClass "\n\"")
     char '"'
-    return $ s
+    return s
