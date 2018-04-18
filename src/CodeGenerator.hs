@@ -100,7 +100,7 @@ genDataSection p =
 
 genGotoSection :: ASMCode -> String
 genGotoSection (ASMCode _ _ ls _ _ _) =
-    case null ls of
+    case Set.null ls of
         True -> ""
         False ->
             "gosub:\n"
