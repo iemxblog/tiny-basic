@@ -100,10 +100,13 @@ genDataSection p =
 
 genGotoSection :: ASMCode -> String
 genGotoSection (ASMCode _ _ ls _ _ _) =
-    "gosub:\n"
-    ++ indent ++ "push {lr}\n"
-    ++ "goto :\n"
-    ++ Set.foldr (\v s -> s ++ indent ++ "cmp r0, #" ++ show v ++ "\n" ++ indent ++ "beq label_" ++ show v ++ "\n") "" ls
+    case null ls of
+        True -> ""
+        False ->
+            "gosub:\n"
+            ++ indent ++ "push {lr}\n"
+            ++ "goto :\n"
+            ++ Set.foldr (\v s -> s ++ indent ++ "cmp r0, #" ++ show v ++ "\n" ++ indent ++ "beq label_" ++ show v ++ "\n") "" ls
 
 genRelocation :: ASMCode -> String
 genRelocation (ASMCode _ _ _ _ r _) =
