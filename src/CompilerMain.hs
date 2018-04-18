@@ -6,6 +6,7 @@ import Data.Attoparsec.Text
 import Control.Monad
 import Parser
 import AST
+import Compiler
 import CodeGenerator
 
 usage :: IO ()
@@ -24,5 +25,5 @@ main = do
                 Right p -> do
                     print p
                     putStrLn "****"
-                    putStrLn $ genCode factorial
+                    putStrLn $ getCompiledCode $ compile p
         _ -> usage
