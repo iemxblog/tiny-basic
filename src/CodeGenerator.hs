@@ -278,6 +278,7 @@ printNewLine =
 input :: Var -> ASMCode
 input v = 
     var v
+    <> printString ("input" ++ [v]) (v : " = ")
     <> string "pattern" "%d"
     <> externalFunction "scanf"
     <> instr "ldr r0, address_of_pattern"
