@@ -15,4 +15,4 @@ all: $(EXECUTABLES)
 	gcc $< -o $@ 
 
 clean:
-	rm -f *.s *.o 
+	rm -f *.s *.o $(EXECUTABLES)
