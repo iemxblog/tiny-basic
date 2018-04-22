@@ -128,7 +128,6 @@ interpretStatement (Input vs) = mapM_ inputVariable vs
 interpretStatement (Let vn e) = evalExpression e >>= setVariable vn
 interpretStatement (GoSub e) = push >> goto e
 interpretStatement Return = pop
-interpretStatement Clear = setVariables Map.empty
 interpretStatement End = stop
    
 goto :: Expression -> Interpreter ()

@@ -51,9 +51,6 @@ statement =
     <|> try letStatement
     <|> try gosubStatement
     <|> try returnStatement
-    <|> try clearStatement
-    <|> try listStatement
-    <|> try runStatement
     <|> endStatement
 
 printStatement :: Parser Statement
@@ -100,15 +97,6 @@ gosubStatement = do
 
 returnStatement :: Parser Statement
 returnStatement = symbol "RETURN" >> return Return
-
-clearStatement :: Parser Statement
-clearStatement = symbol "CLEAR" >> return Clear
-
-listStatement :: Parser Statement
-listStatement = symbol "LIST" >> return List
-
-runStatement :: Parser Statement
-runStatement = symbol "RUN" >> return Run
 
 endStatement :: Parser Statement
 endStatement = symbol "END" >> return End

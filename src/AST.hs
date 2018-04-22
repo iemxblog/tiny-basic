@@ -32,9 +32,6 @@ data Statement =
     | Let Var Expression
     | GoSub Expression
     | Return
-    | Clear
-    | List
-    | Run
     | End
     deriving Eq
 
@@ -75,9 +72,6 @@ instance Show Statement where
     show (Let v e) = "LET " ++ [v] ++ " = " ++ show e
     show (GoSub e) = "GOSUB " ++ show e
     show Return = "RETURN"
-    show Clear = "CLEAR"
-    show List = "LIST"
-    show Run = "RUN"
     show End = "END"
     
 
