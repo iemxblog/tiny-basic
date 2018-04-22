@@ -84,6 +84,7 @@ instance Compilable Statement where
         return $ ce <> store v
     compile (GoSub e) = compile e >>= \ce -> return $ ce <> gosub
     compile Return = return aReturn
+    compile End = return end
 
 instance Compilable Expression where
     compile (Expression s t xs) = do

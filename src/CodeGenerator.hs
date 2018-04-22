@@ -25,6 +25,7 @@ module CodeGenerator (
     , printInt
     , printNewLine
     , input
+    , end
     , aMain
     , endMain
 ) where
@@ -251,39 +252,45 @@ aReturn =
     instr "pop {lr}"
     <> instr "bx lr"
 
+callExternalFunction :: String -> ASMCode
+callExternalFunction s = 
+    externalFunction s
+    <> instr ("bl " ++ s)
+
 printString ::  String      -- ^ String name 
                 -> String   -- ^ String Value
                 -> ASMCode
 printString sn sv =
     string sn sv
-    <> externalFunction "printf"
     <> instr ("ldr r0, address_of_" ++ sn)
-    <> instr "bl printf"
+    <> callExternalFunction "printf"
 
 printInt :: ASMCode
 printInt =
-    externalFunction "printf"
-    <> string "pattern" "%d"
+    string "pattern" "%d"
     <> instr "ldr r0, address_of_pattern"
     <> instr "pop {r1}"
-    <> instr "bl printf"
+    <> callExternalFunction "printf"
 
 printNewLine :: ASMCode
 printNewLine = 
-    externalFunction "puts"
-    <> string "empty_string" ""
+    string "empty_string" ""
     <> instr "ldr r0, address_of_empty_string"
-    <> instr "bl puts"
+    <> callExternalFunction "puts"
 
 input :: Var -> ASMCode
 input v = 
     var v
     <> printString ("input" ++ [v]) (v : " = ")
     <> string "pattern" "%d"
-    <> externalFunction "scanf"
     <> instr "ldr r0, address_of_pattern"
     <> instr ("ldr r1, address_of_" ++ [v])
-    <> instr "bl scanf"
+    <> callExternalFunction "scanf"
+
+end :: ASMCode
+end = 
+    instr "mov r0, #0"
+    <> callExternalFunction "exit"
 
 aMain :: ASMCode
 aMain = 
