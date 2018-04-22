@@ -22,8 +22,5 @@ main = do
             source <- readFile sourceFileName
             case parseOnly program (pack source) of
                 Left err -> putStrLn err
-                Right p -> do
-                    print p
-                    putStrLn "****"
-                    putStrLn $ getCompiledCode $ compile p
+                Right p -> writeFile outputFileName $ getCompiledCode $ compile p
         _ -> usage
