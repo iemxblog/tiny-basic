@@ -57,7 +57,7 @@ getVariable :: Var -> Interpreter Int
 getVariable vn = do
     vs <- getVariables
     case Map.lookup vn vs of
-        Nothing -> interpreterError $ "Unknown variable " ++ [vn]
+        Nothing -> interpreterError $ "Uninitialized variable " ++ [vn]
         Just vv -> return vv
 
 
@@ -214,10 +214,8 @@ main = do
             case parseOnly program (pack source) of
                 Left err -> putStrLn err
                 Right v -> do
-                    print v 
-                    putStrLn "Running program..."
                     r <- evalStateT (runReaderT (runErrorT runProgram) (v, calculateLabels v)) (0, Map.empty, [], True)
                     case r of
                         Left err -> putStrLn $ "Program failed with error : " ++ err
-                        Right () -> putStrLn "Program terminated without error"
+                        Right () -> return ()
         _ -> usage
