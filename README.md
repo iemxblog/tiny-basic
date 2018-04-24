@@ -2,6 +2,20 @@
 Compiles to ARM assembly. Assembly code is not optimized at all. It is just a toy compiler for a toy language.
 Wikipedia page on [tiny-basic](https://en.wikipedia.org/wiki/Tiny_BASIC)
 
+# How to build the examples
+
+With a Raspberry pi, and a fresh Raspbian install :
+
+~~~~~
+sudo apt install haskell-platform git
+git clone https://github.com/iemxblog/tiny-basic/
+cd tiny-basic
+cabal build
+cd examples
+make
+~~~~~
+
+
 # Compilation example
 
 Input file : factorial.bas
