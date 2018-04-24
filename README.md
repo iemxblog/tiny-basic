@@ -1,4 +1,4 @@
-# Tiny-Basic interpreter and compiler 
+# Tiny-Basic interpreter and compiler written in Haskell
 Compiles to ARM assembly. Assembly code is not optimized at all. It is just a toy compiler for a toy language.
 Wikipedia page on [tiny-basic](https://en.wikipedia.org/wiki/Tiny_BASIC)
 
